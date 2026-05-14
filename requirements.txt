@@ -4,3 +4,5 @@ pydantic
 motor
 python-dotenv
 requests
+
+httpx
