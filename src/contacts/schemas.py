@@ -1,6 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from .models import SocialLink
 
 
@@ -38,7 +38,7 @@ class ContactFilter(BaseModel):
 
 
 class ContactResponse(ContactCreate):
-    id: str
+    id: str = Field(alias="_id")
     owner_id: str
     is_favorite: bool
     qr_code_data: Optional[str] = None

@@ -18,6 +18,7 @@ class DigitalCardModel(BaseModel):
     qr_code_data: Optional[str] = None
     view_count: int = Field(default=0)
     is_public: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     model_config = ConfigDict(populate_by_name=True)
