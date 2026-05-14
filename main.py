@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     await close_mongo_connection()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, debug=True)
 
 app.include_router(digital_cards_router)
 app.include_router(users_router)

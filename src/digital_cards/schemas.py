@@ -37,8 +37,8 @@ class DigitalCardResponse(DigitalCardBase):
     id: str = Field(alias="_id")
     owner_id: str
     view_count: int = Field(default=0)
+    created_at: datetime
     updated_at: datetime
-    is_deleted: bool = Field(default=False)
     
     # Config for Pydantic to map from MongoDB Dict (with _id)
     model_config = ConfigDict(populate_by_name=True)

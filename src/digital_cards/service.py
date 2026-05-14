@@ -6,7 +6,6 @@ from .models import DigitalCardModel
 from datetime import datetime, timezone
 from bson import ObjectId
 from bson.errors import InvalidId
-from pymongo import ReturnDocument
 
 COLLECTION_NAME = "digital_cards"
 
@@ -27,11 +26,15 @@ async def get_digital_card_service(digital_card_id: str):
 
 
 async def create_digital_card_service(card_in: DigitalCardCreate, owner_id: str):
-    db = await get_db()
-    db_card = DigitalCardModel(**card_in.model_dump(), owner_id=owner_id)
-    card_data = db_card.model_dump(mode="json", exclude_none=True)
-    result = await db[COLLECTION_NAME].insert_one(card_data)
-    return {"message": f"Digital card created successfully with id {result.inserted_id}"}
+    try:
+        db = await get_db()
+        db_card = DigitalCardModel(**card_in.model_dump(), owner_id=owner_id)
+        card_data = db_card.model_dump(mode="json", exclude_none=True)
+        result = await db[COLLECTION_NAME].insert_one(card_data)
+        created = await db[COLLECTION_NAME].find_one({"_id": result.inserted_id})
+        return jsonable_encoder(created, custom_encoder={ObjectId: str})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create digital card: {str(e)}")
 
 
 async def update_digital_card_service(digital_card_id: str, card_in: DigitalCardUpdate):

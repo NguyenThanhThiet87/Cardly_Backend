@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ExtractedCardData(BaseModel):
@@ -14,7 +14,7 @@ class ExtractedCardData(BaseModel):
 
 
 class ScanResponse(BaseModel):
-    id: str
+    id: str = Field(alias="_id")
     contact_id: Optional[str] = None
     image_url: str
     status: str
