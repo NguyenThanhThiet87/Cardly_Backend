@@ -3,14 +3,14 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, Field, ConfigDict
 
 
-class BusinessCardScanDocument(BaseModel):
+class UserDocument(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
-    contact_id: Optional[str] = None
-    image_url: str
-    raw_text: Optional[str] = None
-    extracted_data: Optional[dict] = None
-    confidence_score: Optional[float] = None
-    status: str = "pending"
+    email: str
+    hashed_password: str
+    full_name: Optional[str] = None
+    username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     model_config = ConfigDict(populate_by_name=True)
