@@ -6,20 +6,31 @@ from .models import DigitalCardModel
 from datetime import datetime, timezone
 from bson import ObjectId
 from bson.errors import InvalidId
+from pymongo import ReturnDocument
 
 COLLECTION_NAME = "digital_cards"
 
 
-async def get_digital_cards_service():
+def _owner_query(owner_id: str) -> dict:
+    try:
+        return {"owner_id": {"$in": [owner_id, ObjectId(owner_id)]}}
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+
+async def get_digital_cards_service(owner_id: str):
     db = await get_db()
-    cards = await db[COLLECTION_NAME].find({"is_public": True}).to_list(length=100)
+    cards = await db[COLLECTION_NAME].find(_owner_query(owner_id)).to_list(length=100)
     return jsonable_encoder(cards, custom_encoder={ObjectId: str})
 
 
-async def get_digital_card_service(digital_card_id: str):
+async def get_digital_card_service(digital_card_id: str, owner_id: str | None = None):
     try:
         db = await get_db()
-        card = await db[COLLECTION_NAME].find_one({"_id": ObjectId(digital_card_id)})
+        query = {"_id": ObjectId(digital_card_id)}
+        if owner_id:
+            query.update(_owner_query(owner_id))
+        card = await db[COLLECTION_NAME].find_one(query)
         return jsonable_encoder(card, custom_encoder={ObjectId: str}) if card else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid digital card ID")
@@ -30,6 +41,7 @@ async def create_digital_card_service(card_in: DigitalCardCreate, owner_id: str)
         db = await get_db()
         db_card = DigitalCardModel(**card_in.model_dump(), owner_id=owner_id)
         card_data = db_card.model_dump(mode="json", exclude_none=True)
+        card_data["owner_id"] = ObjectId(owner_id)
         result = await db[COLLECTION_NAME].insert_one(card_data)
         created = await db[COLLECTION_NAME].find_one({"_id": result.inserted_id})
         return jsonable_encoder(created, custom_encoder={ObjectId: str})
@@ -71,7 +83,8 @@ async def get_public_card_by_username_service(username: str):
     user = await db["users"].find_one({"username": username})
     if not user:
         return None
+    owner_values = [str(user["_id"]), user["_id"]]
     card = await db[COLLECTION_NAME].find_one(
-        {"owner_id": str(user["_id"]), "is_public": True}
+        {"owner_id": {"$in": owner_values}, "is_public": True}
     )
     return jsonable_encoder(card, custom_encoder={ObjectId: str}) if card else None
