@@ -1,4 +1,6 @@
 from database import get_db
+import os
+import httpx
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 from .models import BusinessCardScanDocument
@@ -7,12 +9,36 @@ from .constants import STATUS_DONE, STATUS_FAILED
 
 COLLECTION = "business_card_scans"
 
+async def run_ocr(image_data: bytes) -> tuple[str, dict, float]:
+    base_url = os.getenv("PADDLEOCR_VL_SERVER_URL")
+    if not base_url:
+        raise ValueError("PADDLEOCR_VL_SERVER_URL is not set")
+    url = base_url.rstrip("/") + "/predict"
+    
+    token = os.getenv("ACCESS_TOKEN_PADDLEOCR_VL")
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
 
-async def run_ocr(image_data: bytes) -> tuple[str, float]:
-    # TODO: integrate AWS Textract or Tesseract
-    # Returns (raw_text, confidence_score)
-    raise NotImplementedError("OCR not implemented yet")
-
+    async with httpx.AsyncClient() as client:
+        files = {"file": ("card.jpg", image_data, "image/jpeg")}
+        try:
+            response = await client.post(url, headers=headers, files=files, timeout=60.0)
+            response.raise_for_status()
+            data = response.json()
+            
+            raw_text = data.get("raw_text", "")
+            extracted_data = data.get("extracted_data", {})
+            confidence = data.get("confidence_score", 0.9)
+            
+            return raw_text, extracted_data, confidence
+            
+        except httpx.HTTPStatusError as e:
+            print(f"Hugging Face API returned error: {e.response.status_code} - {e.response.text}")
+            raise
+        except Exception as e:
+            print(f"Error calling Hugging Face API: {e}")
+            raise
 
 async def save_scan(
     image_url: str,

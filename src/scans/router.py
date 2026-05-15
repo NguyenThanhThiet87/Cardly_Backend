@@ -17,8 +17,8 @@ async def upload_scan(
     # TODO: upload image_data to storage and get image_url
     image_url = f"https://storage.example.com/scans/{user_id}/{file.filename}"
 
-    raw_text, confidence_score = await service.run_ocr(image_data)
-    extracted_data = extract_text_fields(raw_text)
+    raw_text, extracted_data, confidence_score = await service.run_ocr(image_data)
+    # Không dùng rule-base nữa, lấy extracted_data trực tiếp từ HF Space trả về!
 
     return await service.save_scan(
         image_url=image_url,
