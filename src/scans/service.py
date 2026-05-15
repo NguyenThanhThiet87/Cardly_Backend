@@ -36,7 +36,7 @@ async def run_ocr(image_data: bytes) -> tuple[str, dict, float]:
         prompt = """
         Extract business card information.
         Return a JSON object with the following keys:
-        - name
+        - full_name
         - company
         - position
         - emails (list of strings)
@@ -47,7 +47,7 @@ async def run_ocr(image_data: bytes) -> tuple[str, dict, float]:
         """
         
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             contents=[prompt, img],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
