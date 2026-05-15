@@ -3,7 +3,7 @@ from bson.errors import InvalidId
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 
-from database import get_db
+from src.database import get_db
 from .models import TagDocument
 from .schemas import TagCreate, TagUpdate
 

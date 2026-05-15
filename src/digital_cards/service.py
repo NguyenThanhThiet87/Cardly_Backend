@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
-from database import get_db
+from src.database import get_db
 from .schemas import DigitalCardCreate, DigitalCardUpdate
 from .models import DigitalCardModel
 from datetime import datetime, timezone
