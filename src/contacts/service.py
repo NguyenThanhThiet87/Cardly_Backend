@@ -1,4 +1,4 @@
-from database import get_db
+from src.database import get_db
 from bson import ObjectId
 from bson.errors import InvalidId
 from datetime import datetime, timezone
@@ -15,10 +15,26 @@ def _encode(doc: dict) -> dict:
     return jsonable_encoder(doc, custom_encoder={ObjectId: str})
 
 
+def _to_object_id(value: str, field_name: str) -> ObjectId:
+    try:
+        return ObjectId(value)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail=f"Invalid {field_name}")
+
+
+def _normalize_contact_doc(doc: dict) -> dict:
+    if "owner_id" in doc:
+        doc["owner_id"] = _to_object_id(doc["owner_id"], "owner ID")
+    if "tag_ids" in doc:
+        doc["tag_ids"] = [_to_object_id(tag_id, "tag ID") for tag_id in doc.get("tag_ids", [])]
+    return doc
+
+
 async def create(data: ContactCreate, owner_id: str) -> dict:
     db = await get_db()
     doc = ContactDocument(**data.model_dump(), owner_id=owner_id)
-    result = await db[COLLECTION].insert_one(doc.model_dump(mode="json", exclude_none=True))
+    contact_data = _normalize_contact_doc(doc.model_dump(mode="json", exclude_none=True))
+    result = await db[COLLECTION].insert_one(contact_data)
     created = await db[COLLECTION].find_one({"_id": result.inserted_id})
     return _encode(created)
 
@@ -43,6 +59,8 @@ async def update(contact_id: str, data: ContactUpdate) -> dict | None:
     try:
         db = await get_db()
         update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+        if "tag_ids" in update_data:
+            update_data["tag_ids"] = [_to_object_id(tag_id, "tag ID") for tag_id in update_data["tag_ids"]]
         update_data["updated_at"] = datetime.now(timezone.utc)
         doc = await db[COLLECTION].find_one_and_update(
             {"_id": ObjectId(contact_id)},

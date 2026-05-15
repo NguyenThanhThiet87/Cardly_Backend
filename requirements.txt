@@ -3,6 +3,9 @@ uvicorn
 pydantic
 motor
 python-dotenv
-requests
 
-httpx
+requests
+PyJWT
+passlib[bcrypt]
+python-multipart
+email-validator

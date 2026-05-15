@@ -11,22 +11,22 @@ from .service import (
 from src.auth.dependencies import get_current_user_id
 from .dependencies import validate_owner_digital_card
 
-router = APIRouter()
+router = APIRouter(tags=["digital-cards"])
 
 
 @router.get("/digital-cards", response_model=list[DigitalCardResponse])
-async def get_digital_cards():
-    return await get_digital_cards_service()
+async def get_digital_cards(current_user_id: str = Depends(get_current_user_id)):
+    return await get_digital_cards_service(current_user_id)
 
 
-@router.post("/digital-cards", status_code=status.HTTP_201_CREATED)
+@router.post("/digital-cards", response_model=DigitalCardResponse, status_code=status.HTTP_201_CREATED)
 async def create_digital_card(digital_card: DigitalCardCreate, current_user_id: str = Depends(get_current_user_id)):
     return await create_digital_card_service(digital_card, current_user_id)
 
 
 @router.get("/digital-cards/{digital_card_id}", response_model=DigitalCardResponse)
-async def get_digital_card(digital_card_id: str):
-    card = await get_digital_card_service(digital_card_id)
+async def get_digital_card(digital_card_id: str, current_user_id: str = Depends(get_current_user_id)):
+    card = await get_digital_card_service(digital_card_id, current_user_id)
     if not card:
         raise HTTPException(status_code=404, detail="Digital card not found")
     return card

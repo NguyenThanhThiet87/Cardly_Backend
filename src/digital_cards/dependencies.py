@@ -7,4 +7,4 @@ async def validate_owner_digital_card(digital_card_id: str, user_id = Depends(ge
     if not digital_card:
         raise HTTPException(status_code=404, detail="Digital card not found")
     else:
-        return digital_card["owner_id"] == user_id
+        return str(digital_card["owner_id"]) == user_id

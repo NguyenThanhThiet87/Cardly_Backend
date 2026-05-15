@@ -1,6 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from .models import SocialLink
 
 
@@ -12,10 +12,12 @@ class ContactCreate(BaseModel):
     phone: Optional[str] = None
     website: Optional[str] = None
     address: Optional[str] = None
+    qr_code_data: Optional[str] = None
     notes: Optional[str] = None
     source_note: Optional[str] = None
-    social_links: List[SocialLink] = []
-    tag_ids: List[str] = []
+    social_links: List[SocialLink] = Field(default_factory=list)
+    tag_ids: List[str] = Field(default_factory=list)
+    scanned_at: Optional[datetime] = None
 
 
 class ContactUpdate(BaseModel):
@@ -26,10 +28,12 @@ class ContactUpdate(BaseModel):
     phone: Optional[str] = None
     website: Optional[str] = None
     address: Optional[str] = None
+    qr_code_data: Optional[str] = None
     notes: Optional[str] = None
     source_note: Optional[str] = None
     social_links: Optional[List[SocialLink]] = None
     tag_ids: Optional[List[str]] = None
+    is_favorite: Optional[bool] = None
 
 
 class ContactFilter(BaseModel):
@@ -38,7 +42,7 @@ class ContactFilter(BaseModel):
 
 
 class ContactResponse(ContactCreate):
-    id: str
+    id: str = Field(alias="_id")
     owner_id: str
     is_favorite: bool
     qr_code_data: Optional[str] = None

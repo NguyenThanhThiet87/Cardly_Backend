@@ -18,6 +18,7 @@ class DigitalCardBase(BaseModel):
     highlights: List[str] = Field(default_factory=list)
     custom_url: Optional[HttpUrl] = None
     logo_url: Optional[HttpUrl] = None
+    theme: Dict = Field(default_factory=dict)
     qr_code_data: Optional[str] = None
     is_public: bool = Field(default=True)
 
@@ -37,8 +38,8 @@ class DigitalCardResponse(DigitalCardBase):
     id: str = Field(alias="_id")
     owner_id: str
     view_count: int = Field(default=0)
+    created_at: datetime
     updated_at: datetime
-    is_deleted: bool = Field(default=False)
     
     # Config for Pydantic to map from MongoDB Dict (with _id)
     model_config = ConfigDict(populate_by_name=True)
