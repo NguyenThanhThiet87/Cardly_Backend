@@ -11,7 +11,7 @@ from .service import (
 from src.auth.dependencies import get_current_user_id
 from .dependencies import validate_owner_digital_card
 
-router = APIRouter()
+router = APIRouter(tags=["digital-cards"])
 
 
 @router.get("/digital-cards", response_model=list[DigitalCardResponse])
