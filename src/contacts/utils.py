@@ -1,4 +1,6 @@
 import re
+from bson import ObjectId
+from bson.errors import InvalidId
 
 
 def normalize_phone(phone: str) -> str:
@@ -9,9 +11,19 @@ def normalize_phone(phone: str) -> str:
 
 
 def build_contact_filter_query(owner_id: str, tag: str | None, search: str | None) -> dict:
-    query: dict = {"owner_id": owner_id}
+    owner_values: list = [owner_id]
+    try:
+        owner_values.append(ObjectId(owner_id))
+    except InvalidId:
+        pass
+    query: dict = {"owner_id": {"$in": owner_values}}
     if tag:
-        query["tag_ids"] = tag
+        tag_values: list = [tag]
+        try:
+            tag_values.append(ObjectId(tag))
+        except InvalidId:
+            pass
+        query["tag_ids"] = {"$in": tag_values}
     if search:
         query["$or"] = [
             {"full_name": {"$regex": search, "$options": "i"}},

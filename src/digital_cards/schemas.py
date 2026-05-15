@@ -18,6 +18,7 @@ class DigitalCardBase(BaseModel):
     highlights: List[str] = Field(default_factory=list)
     custom_url: Optional[HttpUrl] = None
     logo_url: Optional[HttpUrl] = None
+    theme: Dict = Field(default_factory=dict)
     qr_code_data: Optional[str] = None
     is_public: bool = Field(default=True)
 

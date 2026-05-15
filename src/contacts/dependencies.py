@@ -15,6 +15,6 @@ async def verify_contact_owner(
     contact: dict = Depends(get_contact_or_404),
     user_id: str = Depends(get_current_user_id),
 ) -> dict:
-    if contact["owner_id"] != user_id:
+    if str(contact["owner_id"]) != user_id:
         raise ContactAccessDenied()
     return contact
