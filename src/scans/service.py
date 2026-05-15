@@ -1,4 +1,5 @@
 from src.database import get_db
+import os
 from bson import ObjectId
 from bson.errors import InvalidId
 from fastapi import HTTPException
@@ -9,12 +10,62 @@ from .constants import STATUS_DONE, STATUS_FAILED
 
 COLLECTION = "business_card_scans"
 
+import io
+import json
+from google import genai
+from PIL import Image
 
-async def run_ocr(image_data: bytes) -> tuple[str, float]:
-    # TODO: integrate AWS Textract or Tesseract
-    # Returns (raw_text, confidence_score)
-    raise NotImplementedError("OCR not implemented yet")
+from google.genai import types
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+async def run_ocr(image_data: bytes) -> tuple[str, dict, float]:
+    # Lấy API Key từ .env
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY is not set in environment variables")
+        
+    try:
+        # Truyền api_key trực tiếp
+        client = genai.Client(api_key=api_key)
+        # Mở ảnh từ dữ liệu bytes truyền vào
+        img = Image.open(io.BytesIO(image_data))
+        
+        prompt = """
+        Extract business card information.
+        Return a JSON object with the following keys:
+        - full_name
+        - company
+        - position
+        - emails (list of strings)
+        - phones (list of strings)
+        - website
+        - address
+        - confidence (a float between 0 and 1 representing your confidence in the extraction)
+        """
+        
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-lite",
+            contents=[prompt, img],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+            )
+        )
+        
+        # Gemini trả về JSON sạch khi dùng response_mime_type
+        raw_text = response.text.strip()
+        extracted_data = json.loads(raw_text)
+        
+        # Lấy độ tin cậy từ Gemini trả về, mặc định là 0.0 nếu không có
+        confidence = extracted_data.get("confidence", 0.0)
+        
+        return raw_text, extracted_data, confidence
+        
+    except Exception as e:
+        print(f"Error calling Gemini API: {e}")
+        raise
 
 async def save_scan(
     image_url: str,

@@ -7,15 +7,14 @@ class ExtractedCardData(BaseModel):
     full_name: Optional[str] = None
     position: Optional[str] = None
     company: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
+    phones: Optional[list[str]] = None
+    emails: Optional[list[str]] = None
     website: Optional[str] = None
     address: Optional[str] = None
 
 
 class ScanResponse(BaseModel):
     id: str = Field(alias="_id")
-    contact_id: Optional[str] = None
     image_url: str
     status: str
     raw_text: Optional[str] = None
