@@ -9,3 +9,5 @@ PyJWT
 passlib[bcrypt]
 python-multipart
 email-validator
+
+aioboto3

@@ -7,8 +7,8 @@ class ExtractedCardData(BaseModel):
     full_name: Optional[str] = None
     position: Optional[str] = None
     company: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
+    phones: Optional[list[str]] = None
+    emails: Optional[list[str]] = None
     website: Optional[str] = None
     address: Optional[str] = None
 
