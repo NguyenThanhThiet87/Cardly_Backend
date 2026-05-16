@@ -12,7 +12,6 @@ class ExtractedCardData(BaseModel):
     website: Optional[str] = None
     address: Optional[str] = None
 
-
 class ScanResponse(BaseModel):
     id: str = Field(alias="_id")
     image_url: str

@@ -7,9 +7,9 @@ def extract_text_fields(raw_text: str) -> dict:
     email = re.search(r"[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}", raw_text)
     website = re.search(r"(https?://[^\s]+|www\.[^\s]+)", raw_text)
     if phone:
-        result["phone"] = phone.group(1).strip()
+        result["phones"] = [phone.group(1).strip()]
     if email:
-        result["email"] = email.group(0)
+        result["emails"] = [email.group(0)]
     if website:
         result["website"] = website.group(0)
     return result

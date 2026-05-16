@@ -55,8 +55,8 @@ async def upload_scan(
             full_name=extracted_data.get("full_name") or "Unknown",
             company=extracted_data.get("company"),
             position=extracted_data.get("position"),
-            email=extracted_data.get("emails")[0] if extracted_data.get("emails") else None,
-            phone=extracted_data.get("phones")[0] if extracted_data.get("phones") else None,
+            emails=extracted_data.get("emails") or [],
+            phones=extracted_data.get("phones") or [],
             website=extracted_data.get("website"),
             address=extracted_data.get("address"),
             source_note="Scanned from business card"
