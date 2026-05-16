@@ -15,6 +15,15 @@ def _encode(doc: dict) -> dict:
     return jsonable_encoder(doc, custom_encoder={ObjectId: str})
 
 
+def _with_list_fields(doc: dict | None) -> dict | None:
+    if not doc:
+        return doc
+    for field in ("email", "phone"):
+        if isinstance(doc.get(field), str):
+            doc[field] = [doc[field]]
+    return doc
+
+
 def _to_object_id(value: str, field_name: str) -> ObjectId:
     try:
         return ObjectId(value)
@@ -43,6 +52,7 @@ async def get(contact_id: str) -> dict | None:
     try:
         db = await get_db()
         doc = await db[COLLECTION].find_one({"_id": ObjectId(contact_id)})
+        doc = _with_list_fields(doc)
         return _encode(doc) if doc else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid contact ID")
@@ -52,13 +62,14 @@ async def list_contacts(owner_id: str, tag: str | None = None, search: str | Non
     db = await get_db()
     query = build_contact_filter_query(owner_id, tag, search)
     docs = await db[COLLECTION].find(query).to_list(length=200)
+    docs = [_with_list_fields(doc) for doc in docs]
     return _encode(docs)
 
 
 async def update(contact_id: str, data: ContactUpdate) -> dict | None:
     try:
         db = await get_db()
-        update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+        update_data = data.model_dump(mode="json", exclude_none=True)
         if "tag_ids" in update_data:
             update_data["tag_ids"] = [_to_object_id(tag_id, "tag ID") for tag_id in update_data["tag_ids"]]
         update_data["updated_at"] = datetime.now(timezone.utc)
@@ -67,6 +78,7 @@ async def update(contact_id: str, data: ContactUpdate) -> dict | None:
             {"$set": update_data},
             return_document=True,
         )
+        doc = _with_list_fields(doc)
         return _encode(doc) if doc else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid contact ID")
@@ -89,6 +101,7 @@ async def toggle_favorite(contact_id: str, value: bool) -> dict | None:
             {"$set": {"is_favorite": value, "updated_at": datetime.now(timezone.utc)}},
             return_document=True,
         )
+        doc = _with_list_fields(doc)
         return _encode(doc) if doc else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid contact ID")

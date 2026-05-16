@@ -14,8 +14,8 @@ class ContactDocument(BaseModel):
     full_name: str
     position: Optional[str] = None
     company: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
+    email: List[str] = Field(default_factory=list)
+    phone: List[str] = Field(default_factory=list)
     website: Optional[str] = None
     address: Optional[str] = None
     qr_code_data: Optional[str] = None
