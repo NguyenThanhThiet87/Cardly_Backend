@@ -6,7 +6,6 @@ from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 from .schemas import ContactCreate, ContactUpdate
 from .models import ContactDocument
-from .constants import PHONE_TYPE_PERSONAL
 from .utils import build_contact_filter_query
 
 COLLECTION = "contacts"
@@ -16,11 +15,9 @@ def _encode(doc: dict) -> dict:
     return jsonable_encoder(doc, custom_encoder={ObjectId: str})
 
 
-def _with_phone_numbers(doc: dict | None) -> dict | None:
-    if doc and doc.get("phone") and not doc.get("phone_numbers"):
-        doc["phone_numbers"] = [
-            {"type": PHONE_TYPE_PERSONAL, "number": doc["phone"]},
-        ]
+def _with_phone_list(doc: dict | None) -> dict | None:
+    if doc and isinstance(doc.get("phone"), str):
+        doc["phone"] = [doc["phone"]]
     return doc
 
 
@@ -52,7 +49,7 @@ async def get(contact_id: str) -> dict | None:
     try:
         db = await get_db()
         doc = await db[COLLECTION].find_one({"_id": ObjectId(contact_id)})
-        doc = _with_phone_numbers(doc)
+        doc = _with_phone_list(doc)
         return _encode(doc) if doc else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid contact ID")
@@ -62,7 +59,7 @@ async def list_contacts(owner_id: str, tag: str | None = None, search: str | Non
     db = await get_db()
     query = build_contact_filter_query(owner_id, tag, search)
     docs = await db[COLLECTION].find(query).to_list(length=200)
-    docs = [_with_phone_numbers(doc) for doc in docs]
+    docs = [_with_phone_list(doc) for doc in docs]
     return _encode(docs)
 
 
@@ -78,7 +75,7 @@ async def update(contact_id: str, data: ContactUpdate) -> dict | None:
             {"$set": update_data},
             return_document=True,
         )
-        doc = _with_phone_numbers(doc)
+        doc = _with_phone_list(doc)
         return _encode(doc) if doc else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid contact ID")
@@ -101,7 +98,7 @@ async def toggle_favorite(contact_id: str, value: bool) -> dict | None:
             {"$set": {"is_favorite": value, "updated_at": datetime.now(timezone.utc)}},
             return_document=True,
         )
-        doc = _with_phone_numbers(doc)
+        doc = _with_phone_list(doc)
         return _encode(doc) if doc else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid contact ID")

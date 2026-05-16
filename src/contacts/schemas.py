@@ -1,15 +1,12 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from .constants import PHONE_TYPE_PERSONAL
-from .models import PhoneNumber, SocialLink
+from .models import SocialLink
 
 
-def _move_legacy_phone(data: dict) -> dict:
-    if data.get("phone") and not data.get("phone_numbers"):
-        data["phone_numbers"] = [
-            {"type": PHONE_TYPE_PERSONAL, "number": data["phone"]},
-        ]
+def _normalize_phone_list(data: dict) -> dict:
+    if isinstance(data.get("phone"), str):
+        data["phone"] = [data["phone"]]
     return data
 
 
@@ -18,8 +15,7 @@ class ContactCreate(BaseModel):
     position: Optional[str] = None
     company: Optional[str] = None
     email: Optional[str] = None
-    phone: Optional[str] = Field(default=None, exclude=True)
-    phone_numbers: List[PhoneNumber] = Field(default_factory=list)
+    phone: List[str] = Field(default_factory=list)
     website: Optional[str] = None
     address: Optional[str] = None
     qr_code_data: Optional[str] = None
@@ -33,7 +29,7 @@ class ContactCreate(BaseModel):
     @classmethod
     def support_legacy_phone(cls, data):
         if isinstance(data, dict):
-            return _move_legacy_phone(data)
+            return _normalize_phone_list(data)
         return data
 
 
@@ -42,8 +38,7 @@ class ContactUpdate(BaseModel):
     position: Optional[str] = None
     company: Optional[str] = None
     email: Optional[str] = None
-    phone: Optional[str] = Field(default=None, exclude=True)
-    phone_numbers: Optional[List[PhoneNumber]] = None
+    phone: Optional[List[str]] = None
     website: Optional[str] = None
     address: Optional[str] = None
     qr_code_data: Optional[str] = None
@@ -57,7 +52,7 @@ class ContactUpdate(BaseModel):
     @classmethod
     def support_legacy_phone(cls, data):
         if isinstance(data, dict):
-            return _move_legacy_phone(data)
+            return _normalize_phone_list(data)
         return data
 
 
