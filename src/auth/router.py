@@ -12,7 +12,7 @@ async def register(user_data: RegisterRequest):
     Register a new user
     
     - **email**: User email (must be unique)
-    - **password**: At least 8 characters
+    - **password**: 8-16 characters, including letters, numbers, special characters, and one uppercase letter
     - **full_name**: Optional user full name
     - **username**: Optional username
     """
@@ -38,12 +38,12 @@ async def register(user_data: RegisterRequest):
 @router.post("/login", response_model=AuthResponse)
 async def login(credentials: LoginRequest):
     """
-    Login with email and password
+    Login with email or username and password
     
     Returns access token and refresh token
     """
     # Authenticate user
-    user = await AuthService.login(credentials.email, credentials.password)
+    user = await AuthService.login(credentials.identifier, credentials.password)
     
     # Create tokens
     access_token, expires_in = AuthService.create_access_token(str(user["_id"]))

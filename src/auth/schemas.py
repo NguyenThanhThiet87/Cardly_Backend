@@ -1,19 +1,37 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+import re
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
     """Registration request schema"""
     email: EmailStr
-    password: str = Field(min_length=8, description="Minimum 8 characters")
+    password: str = Field(
+        min_length=8,
+        max_length=16,
+        description="8-16 characters with letters, numbers, special characters, and at least one uppercase letter",
+    )
     full_name: Optional[str] = None
     username: Optional[str] = None
-    avatar_url: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if not re.search(r"[A-Za-z]", value):
+            raise ValueError("Password must contain at least one letter")
+        if not re.search(r"[A-Z]", value):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not re.search(r"\d", value):
+            raise ValueError("Password must contain at least one number")
+        if not re.search(r"[^A-Za-z0-9]", value):
+            raise ValueError("Password must contain at least one special character")
+        return value
 
 
 class LoginRequest(BaseModel):
     """Login request schema"""
-    email: EmailStr
+    identifier: str = Field(description="Email or username")
     password: str
 
 
