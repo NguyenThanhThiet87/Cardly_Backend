@@ -15,9 +15,12 @@ def _encode(doc: dict) -> dict:
     return jsonable_encoder(doc, custom_encoder={ObjectId: str})
 
 
-def _with_phone_list(doc: dict | None) -> dict | None:
-    if doc and isinstance(doc.get("phone"), str):
-        doc["phone"] = [doc["phone"]]
+def _with_list_fields(doc: dict | None) -> dict | None:
+    if not doc:
+        return doc
+    for field in ("email", "phone"):
+        if isinstance(doc.get(field), str):
+            doc[field] = [doc[field]]
     return doc
 
 
@@ -49,7 +52,7 @@ async def get(contact_id: str) -> dict | None:
     try:
         db = await get_db()
         doc = await db[COLLECTION].find_one({"_id": ObjectId(contact_id)})
-        doc = _with_phone_list(doc)
+        doc = _with_list_fields(doc)
         return _encode(doc) if doc else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid contact ID")
@@ -59,7 +62,7 @@ async def list_contacts(owner_id: str, tag: str | None = None, search: str | Non
     db = await get_db()
     query = build_contact_filter_query(owner_id, tag, search)
     docs = await db[COLLECTION].find(query).to_list(length=200)
-    docs = [_with_phone_list(doc) for doc in docs]
+    docs = [_with_list_fields(doc) for doc in docs]
     return _encode(docs)
 
 
@@ -75,7 +78,7 @@ async def update(contact_id: str, data: ContactUpdate) -> dict | None:
             {"$set": update_data},
             return_document=True,
         )
-        doc = _with_phone_list(doc)
+        doc = _with_list_fields(doc)
         return _encode(doc) if doc else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid contact ID")
@@ -98,7 +101,7 @@ async def toggle_favorite(contact_id: str, value: bool) -> dict | None:
             {"$set": {"is_favorite": value, "updated_at": datetime.now(timezone.utc)}},
             return_document=True,
         )
-        doc = _with_phone_list(doc)
+        doc = _with_list_fields(doc)
         return _encode(doc) if doc else None
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid contact ID")
