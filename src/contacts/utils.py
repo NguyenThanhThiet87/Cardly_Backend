@@ -29,6 +29,8 @@ def build_contact_filter_query(owner_id: str, tag: str | None, search: str | Non
             {"full_name": {"$regex": search, "$options": "i"}},
             {"email": {"$regex": search, "$options": "i"}},
             {"phone": {"$regex": search, "$options": "i"}},
+            {"phone_numbers.number": {"$regex": search, "$options": "i"}},
+            {"phone_numbers.label": {"$regex": search, "$options": "i"}},
             {"company": {"$regex": search, "$options": "i"}},
         ]
     return query
