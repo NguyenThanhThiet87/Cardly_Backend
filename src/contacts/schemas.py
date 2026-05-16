@@ -5,18 +5,26 @@ from .models import SocialLink
 
 
 def _normalize_list_fields(data: dict) -> dict:
-    for field in ("email", "phone"):
-        if isinstance(data.get(field), str):
-            data[field] = [data[field]]
-    return data
+    # Map singular to plural if plural is missing
+    if "email" in data and "emails" not in data:
+        data["emails"] = data.pop("email")
+    if "phone" in data and "phones" not in data:
+        data["phones"] = data.pop("phone")
 
+    for field in ("emails", "phones"):
+        val = data.get(field)
+        if isinstance(val, str):
+            data[field] = [val]
+        elif val is None:
+            data[field] = []
+    return data
 
 class ContactCreate(BaseModel):
     full_name: str
     position: Optional[str] = None
     company: Optional[str] = None
-    email: List[str] = Field(default_factory=list)
-    phone: List[str] = Field(default_factory=list)
+    emails: List[str] = Field(default_factory=list)
+    phones: List[str] = Field(default_factory=list)
     website: Optional[str] = None
     address: Optional[str] = None
     qr_code_data: Optional[str] = None
@@ -28,18 +36,17 @@ class ContactCreate(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def support_legacy_list_fields(cls, data):
+    def support_legacy_fields(cls, data):
         if isinstance(data, dict):
             return _normalize_list_fields(data)
         return data
-
 
 class ContactUpdate(BaseModel):
     full_name: Optional[str] = None
     position: Optional[str] = None
     company: Optional[str] = None
-    email: Optional[List[str]] = None
-    phone: Optional[List[str]] = None
+    emails: Optional[List[str]] = None
+    phones: Optional[List[str]] = None
     website: Optional[str] = None
     address: Optional[str] = None
     qr_code_data: Optional[str] = None

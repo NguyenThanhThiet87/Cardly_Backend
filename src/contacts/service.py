@@ -10,7 +10,6 @@ from .utils import build_contact_filter_query
 
 COLLECTION = "contacts"
 
-
 def _encode(doc: dict) -> dict:
     return jsonable_encoder(doc, custom_encoder={ObjectId: str})
 
@@ -18,7 +17,7 @@ def _encode(doc: dict) -> dict:
 def _with_list_fields(doc: dict | None) -> dict | None:
     if not doc:
         return doc
-    for field in ("email", "phone"):
+    for field in ("emails", "phones"):
         if isinstance(doc.get(field), str):
             doc[field] = [doc[field]]
     return doc
