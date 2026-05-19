@@ -8,7 +8,7 @@ from .service import (
     toggle_public_digital_card_service,
     get_public_card_by_username_service,
 )
-from src.auth.dependencies import get_current_user_id
+from ..auth.dependencies import get_current_user_id
 from .dependencies import validate_owner_digital_card
 
 router = APIRouter(tags=["digital-cards"])

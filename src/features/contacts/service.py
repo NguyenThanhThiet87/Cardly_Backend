@@ -1,4 +1,4 @@
-from src.database import get_db
+from ...core.database import get_db
 from bson import ObjectId
 from bson.errors import InvalidId
 from datetime import datetime, timezone

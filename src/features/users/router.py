@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from src.auth.dependencies import get_current_user_id
+from ..auth.dependencies import get_current_user_id
 from .dependencies import get_user_or_404
 from .schemas import UserResponse, UserUpdate
 from .service import update_profile, delete_account

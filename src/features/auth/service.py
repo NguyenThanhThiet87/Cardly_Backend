@@ -4,7 +4,7 @@ import bcrypt
 import jwt
 from bson import ObjectId
 from fastapi import HTTPException, status
-from src.database import get_db
+from ...core.database import get_db
 from .models import UserDocument, TokenPayload
 from .schemas import RegisterRequest, UserResponse
 from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE, REFRESH_TOKEN_EXPIRE

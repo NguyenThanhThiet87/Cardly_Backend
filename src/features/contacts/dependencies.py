@@ -1,5 +1,5 @@
 from fastapi import Depends
-from src.auth.dependencies import get_current_user_id
+from ..auth.dependencies import get_current_user_id
 from .service import get
 from .exceptions import ContactNotFound, ContactAccessDenied
 
