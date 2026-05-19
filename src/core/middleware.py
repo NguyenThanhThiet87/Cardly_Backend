@@ -5,6 +5,7 @@ def setup_middleware(app: FastAPI) -> None:
     """ Configuration of middleware """
     origins = [
         "http://localhost",
+        "http://localhost:5173",
         "http://localhost:8080",
     ]
 

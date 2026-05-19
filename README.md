@@ -52,7 +52,7 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 
 RESET_PASSWORD_TOKEN_EXPIRE_MINUTES=30
 FRONTEND_URL=http://localhost:5173
-RESET_PASSWORD_URL=http://localhost:8000/api/auth/reset-password
+RESET_PASSWORD_URL=http://localhost:5173/reset-password
 
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -97,9 +97,10 @@ Flow quên mật khẩu:
 2. Frontend gọi `POST /api/auth/forgot-password`.
 3. Backend tạo reset token, lưu token dạng hash trong MongoDB.
 4. Backend gửi link reset password qua Gmail.
-5. User click link trong Gmail.
-6. Trang reset password mở ra, user nhập mật khẩu mới.
-7. Backend kiểm tra token và đổi mật khẩu.
+5. User click link trong Gmail và mở trang reset password của frontend.
+6. Frontend lấy `token` trên URL, user nhập mật khẩu mới.
+7. Frontend gọi `POST /api/auth/reset-password`.
+8. Backend kiểm tra token và đổi mật khẩu.
 
 Gọi API gửi email:
 
@@ -127,7 +128,7 @@ Response:
 Email sẽ chứa link dạng:
 
 ```text
-http://localhost:8000/api/auth/reset-password?token=<reset_token>
+http://localhost:5173/reset-password?token=<reset_token>
 ```
 
 Route đổi mật khẩu bằng API:
@@ -163,7 +164,6 @@ POST /auth/register
 POST /auth/login
 POST /auth/refresh
 POST /auth/forgot-password
-GET  /auth/reset-password?token=<reset_token>
 POST /auth/reset-password
 GET  /auth/me
 POST /auth/logout
@@ -215,10 +215,10 @@ Nếu Gmail không gửi được, kiểm tra:
 - `SMTP_PASSWORD` là App Password.
 - Không có khoảng trắng thừa ở đầu dòng `.env`, ví dụ dùng `FRONTEND_URL=http://localhost:5173`.
 
-Nếu click link reset password bị về trang login frontend, dùng:
+Nếu click link reset password bị về sai trang, kiểm tra frontend đã có route `/reset-password` và dùng:
 
 ```env
-RESET_PASSWORD_URL=http://localhost:8000/api/auth/reset-password
+RESET_PASSWORD_URL=http://localhost:5173/reset-password
 ```
 
 Sau khi sửa `.env`, restart backend.
