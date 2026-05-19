@@ -97,7 +97,6 @@ class AuthService:
             "hashed_password": AuthService.hash_password(user_data.password),
             "full_name": user_data.full_name,
             "username": user_data.username,
-            "avatar_url": user_data.avatar_url,
             "is_active": True,
             "created_at": datetime.now(timezone.utc),
         }
@@ -108,12 +107,14 @@ class AuthService:
         return user_doc
 
     @staticmethod
-    async def login(email: str, password: str) -> dict:
+    async def login(identifier: str, password: str) -> dict:
         """Authenticate user and return user document"""
         db = await get_db()
 
-        # Find user by email
-        user = await db[AUTH_COLLECTION].find_one({"email": email})
+        # Find user by email or username
+        user = await db[AUTH_COLLECTION].find_one(
+            {"$or": [{"email": identifier}, {"username": identifier}]}
+        )
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
