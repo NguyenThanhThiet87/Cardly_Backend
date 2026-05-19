@@ -3,18 +3,18 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
-class EnrichmentResultCreate(BaseModel):
-    contact_id: str
-    professional_brief: Optional[str] = None
-    keywords: list[str] = Field(default_factory=list)
-    highlights: list[str] = Field(default_factory=list)
-
-
-class EnrichmentResultUpdate(BaseModel):
+class EnrichmentResultBase(BaseModel):
     professional_brief: Optional[str] = None
     keywords: Optional[list[str]] = None
     highlights: Optional[list[str]] = None
+
+
+class EnrichmentResultCreate(EnrichmentResultBase):
+    contact_id: str
+
+
+class EnrichmentResultUpdate(EnrichmentResultBase):
+    pass
 
 
 class EnrichmentResultResponse(EnrichmentResultCreate):

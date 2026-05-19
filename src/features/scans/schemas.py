@@ -11,6 +11,7 @@ class ExtractedCardData(BaseModel):
     emails: Optional[list[str]] = None
     website: Optional[str] = None
     address: Optional[str] = None
+    confidence: Optional[float] = None
 
 class ScanResponse(BaseModel):
     id: str = Field(alias="_id")
@@ -18,5 +19,4 @@ class ScanResponse(BaseModel):
     status: str
     raw_text: Optional[str] = None
     extracted_data: Optional[ExtractedCardData] = None
-    confidence_score: Optional[float] = None
     created_at: datetime
