@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.auth.dependencies import get_current_user_id
+from ..auth.dependencies import get_current_user_id
 from .schemas import EnrichmentResultCreate, EnrichmentResultResponse, EnrichmentResultUpdate
 from . import service
 

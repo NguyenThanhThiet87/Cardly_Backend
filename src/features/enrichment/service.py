@@ -5,8 +5,8 @@ from bson.errors import InvalidId
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 
-from src.database import get_db
-from src.contacts.service import get as get_contact
+from ...core.database import get_db
+from ...features.contacts.service import get as get_contact
 from .models import EnrichmentResultDocument
 from .schemas import EnrichmentResultCreate, EnrichmentResultUpdate
 

@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends
 from typing import Optional
-from src.auth.dependencies import get_current_user_id
+from ..auth.dependencies import get_current_user_id
 from .dependencies import verify_contact_owner
 from .schemas import ContactCreate, ContactUpdate, ContactResponse
 from . import service
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
-
 
 def _contact_id(contact: dict) -> str:
     return str(contact.get("_id") or contact.get("id"))

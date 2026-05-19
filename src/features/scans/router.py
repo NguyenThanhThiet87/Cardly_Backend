@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, UploadFile, HTTPException
-from src.auth.dependencies import get_current_user_id
+from ..auth.dependencies import get_current_user_id
 from .dependencies import validate_image_file
 from .schemas import ScanResponse
 from .utils import extract_text_fields

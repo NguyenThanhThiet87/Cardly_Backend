@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.auth.dependencies import get_current_user_id
+from ..auth.dependencies import get_current_user_id
 from .schemas import TagCreate, TagResponse, TagUpdate
 from . import service
 
