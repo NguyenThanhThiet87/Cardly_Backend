@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from ..auth.dependencies import get_current_user_id
 from .schemas import TagCreate, TagResponse, TagUpdate
@@ -19,22 +19,14 @@ async def list_tags(_: str = Depends(get_current_user_id)):
 
 @router.get("/{tag_id}", response_model=TagResponse)
 async def get_tag(tag_id: str, _: str = Depends(get_current_user_id)):
-    tag = await service.get(tag_id)
-    if not tag:
-        raise HTTPException(status_code=404, detail="Tag not found")
-    return tag
+    return await service.get(tag_id)
 
 
 @router.put("/{tag_id}", response_model=TagResponse)
 async def update_tag(tag_id: str, data: TagUpdate, _: str = Depends(get_current_user_id)):
-    tag = await service.update(tag_id, data)
-    if not tag:
-        raise HTTPException(status_code=404, detail="Tag not found")
-    return tag
+    return await service.update(tag_id, data)
 
 
 @router.delete("/{tag_id}", status_code=204)
 async def delete_tag(tag_id: str, _: str = Depends(get_current_user_id)):
-    deleted = await service.delete(tag_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Tag not found")
+    await service.delete(tag_id)

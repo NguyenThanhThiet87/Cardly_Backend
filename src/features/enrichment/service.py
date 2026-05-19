@@ -24,10 +24,12 @@ def _object_id(value: str, name: str) -> ObjectId:
         raise HTTPException(status_code=400, detail=f"Invalid {name}")
 
 
+def _raise_not_found() -> None:
+    raise HTTPException(status_code=404, detail="Enrichment result not found")
+
+
 async def _ensure_contact_owner(contact_id: str, owner_id: str) -> None:
     contact = await get_contact(contact_id)
-    if not contact:
-        raise HTTPException(status_code=404, detail="Contact not found")
     if str(contact["owner_id"]) != owner_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -43,28 +45,38 @@ async def create(data: EnrichmentResultCreate, owner_id: str) -> dict:
     return _encode(created)
 
 
-async def get_by_contact(contact_id: str, owner_id: str) -> dict | None:
+async def get_by_contact(contact_id: str, owner_id: str) -> dict:
     await _ensure_contact_owner(contact_id, owner_id)
     db = await get_db()
     doc = await db[COLLECTION].find_one({"contact_id": {"$in": [contact_id, _object_id(contact_id, "contact ID")]}})
-    return _encode(doc) if doc else None
+    if not doc:
+        _raise_not_found()
+    return _encode(doc)
 
 
-async def update_by_contact(contact_id: str, owner_id: str, data: EnrichmentResultUpdate) -> dict | None:
+async def update_by_contact(contact_id: str, owner_id: str, data: EnrichmentResultUpdate) -> dict:
     await _ensure_contact_owner(contact_id, owner_id)
     db = await get_db()
+    contact_query = {"contact_id": {"$in": [contact_id, _object_id(contact_id, "contact ID")]}}
+    existing = await db[COLLECTION].find_one(contact_query)
+    if not existing:
+        _raise_not_found()
+
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     doc = await db[COLLECTION].find_one_and_update(
-        {"contact_id": {"$in": [contact_id, _object_id(contact_id, "contact ID")]}},
+        contact_query,
         {"$set": update_data},
         return_document=True,
     )
-    return _encode(doc) if doc else None
+    return _encode(doc)
 
 
-async def delete_by_contact(contact_id: str, owner_id: str) -> bool:
+async def delete_by_contact(contact_id: str, owner_id: str) -> None:
     await _ensure_contact_owner(contact_id, owner_id)
     db = await get_db()
-    result = await db[COLLECTION].delete_one({"contact_id": {"$in": [contact_id, _object_id(contact_id, "contact ID")]}})
-    return result.deleted_count > 0
+    contact_query = {"contact_id": {"$in": [contact_id, _object_id(contact_id, "contact ID")]}}
+    existing = await db[COLLECTION].find_one(contact_query)
+    if not existing:
+        _raise_not_found()
+    await db[COLLECTION].delete_one(contact_query)
