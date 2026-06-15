@@ -31,7 +31,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 async def run_ocr(image_data: bytes) -> tuple[str, dict, float]:
     # Lấy API Key từ .env
     api_key = os.getenv("GEMINI_API_KEY")
@@ -194,3 +193,75 @@ async def process_scan_and_enrich(
             status_code=500,
             detail=f"Error occurred while saving results: {str(e)}"
         )
+
+from pydantic import BaseModel, Field
+from typing import Optional
+
+class ExtractedField(BaseModel):
+    value: Optional[str] = Field(None, description="The extracted text value from the driver's license.")
+    confidence: float = Field(0.0, description="A float between 0.0 and 1.0 representing confidence in this field's extraction and accuracy against the image.")
+
+class ConditionDescription(BaseModel):
+    condition: Optional[str] = ""
+    description: Optional[str] = ""
+
+class DriverLicense(BaseModel):
+    full_name: Optional[ExtractedField] = None
+    date_of_birth: Optional[ExtractedField] = None
+    licence_number: Optional[ExtractedField] = None
+    expiry_date: Optional[ExtractedField] = None
+    address: Optional[ExtractedField] = None
+    licence_class: Optional[ExtractedField] = None
+    conditions: Optional[ExtractedField] = None
+    condition_descriptions: Optional[list[ConditionDescription]] = None
+    state: Optional[ExtractedField] = None
+    card_number: Optional[ExtractedField] = None
+    issue_date: Optional[ExtractedField] = None
+    confidence: float = Field(0.0, description="Overall average confidence score for the entire extraction between 0.0 and 1.0.")
+
+async def run_ocr_multiple(images_data: list[bytes]) -> tuple[str, dict, float]:
+    # Lấy API Key từ .env
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY is not set in environment variables")
+        
+    try:
+        # Truyền api_key trực tiếp
+        client = genai.Client(api_key=api_key)
+        # Mở ảnh từ dữ liệu bytes truyền vào
+        imgs = [Image.open(io.BytesIO(image_data)) for image_data in images_data]
+        
+        prompt = """
+        Extract Australian driver license information.
+        
+        Rules:
+        - Format dates as YYYY-MM-DD.
+        - If a field is not present or cannot be read, set value to null and confidence to 0.0.
+        - The "confidence" field at the root of the JSON should be the overall average confidence score.
+        """
+        
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-lite",
+            contents=[prompt] + imgs,
+            config= GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema = DriverLicense.model_json_schema(),
+                tools=[
+                   {"url_context": {}},
+                ],
+            )
+        )
+        if response.usage_metadata:
+            print(f"Token Usage: Prompt={response.usage_metadata.prompt_token_count}, "
+                  f"Candidates={response.usage_metadata.candidates_token_count}, "
+                  f"Total={response.usage_metadata.total_token_count}")
+        
+        # Gemini trả về JSON sạch khi dùng response_mime_type
+        raw_text = response.text.strip()
+        extracted_data = json.loads(raw_text)
+        
+        return extracted_data
+        
+    except Exception as e:
+        print(f"Error calling Gemini API: {e}")
+        raise
