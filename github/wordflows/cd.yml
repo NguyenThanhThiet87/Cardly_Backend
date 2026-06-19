@@ -1,0 +1,58 @@
+name: apply on merge
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: cardly-learn
+  REGION: asia-southeast1         # Đã sửa thành Singapore cho mạng nhanh
+  REPO_NAME: backend-repo         # Tên kho Artifact Registry của bạn
+  IMAGE_NAME: cardly-backend
+  SERVICE_NAME: cardly-backend-api
+
+jobs:
+  GitHub-actions-wif:
+    permissions:
+      id-token: write
+      contents: read
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Checkout source code'
+        uses: actions/checkout@v4
+
+      # Đăng nhập bằng WIF - Điền thẳng thông số thật của bạn, không cần cài Secrets trên GitHub nữa
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/571340621127/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-oidc'
+          service_account: 'cardly-deployer-sa@cardly-learn.iam.gserviceaccount.com'
+
+      - name: 'Configure Docker cho GCP'
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # BẮT BUỘC PHẢI CÓ: Build code .NET của bạn thành ảnh Docker và đẩy lên mây
+      - name: 'Build và Push Image lên Artifact Registry'
+        run: |
+          IMAGE_URL=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker build -t $IMAGE_URL .
+          docker push $IMAGE_URL
+
+      # Deploy chính xác cái Image vừa build ở trên lên Cloud Run
+      - id: 'deploy-cloud-run'
+        name: 'Deploy to Cloud Run'
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          flags: '--allow-unauthenticated'
+
+      - name: 'Check URL Output'
+        run: 'curl "${{ steps.deploy-cloud-run.outputs.url }}"'
+        continue-on-error: true
