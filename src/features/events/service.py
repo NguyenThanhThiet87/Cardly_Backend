@@ -25,6 +25,10 @@ def _owner_query(owner_id: str) -> dict:
     return {"owner_id": {"$in": [owner_id, _object_id(owner_id, "owner ID")]}}
 
 
+def _raise_not_found() -> None:
+    raise HTTPException(status_code=404, detail="Event not found")
+
+
 def _normalize_ids(data: dict) -> dict:
     if "owner_id" in data:
         data["owner_id"] = _object_id(data["owner_id"], "owner ID")
@@ -48,28 +52,40 @@ async def list_events(owner_id: str) -> list:
     return _encode(docs)
 
 
-async def get(event_id: str, owner_id: str) -> dict | None:
+async def get(event_id: str, owner_id: str) -> dict:
     db = await get_db()
     doc = await db[COLLECTION].find_one({"_id": _object_id(event_id, "event ID"), **_owner_query(owner_id)})
-    return _encode(doc) if doc else None
+    if not doc:
+        _raise_not_found()
+    return _encode(doc)
 
 
-async def update(event_id: str, owner_id: str, data: EventUpdate) -> dict | None:
+async def update(event_id: str, owner_id: str, data: EventUpdate) -> dict:
     db = await get_db()
+    event_object_id = _object_id(event_id, "event ID")
+    owner_query = _owner_query(owner_id)
+    existing = await db[COLLECTION].find_one({"_id": event_object_id, **owner_query})
+    if not existing:
+        _raise_not_found()
+
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if "contact_ids" in update_data:
         update_data["contact_ids"] = [_object_id(contact_id, "contact ID") for contact_id in update_data["contact_ids"]]
     if not update_data:
-        return await get(event_id, owner_id)
+        return _encode(existing)
     doc = await db[COLLECTION].find_one_and_update(
-        {"_id": _object_id(event_id, "event ID"), **_owner_query(owner_id)},
+        {"_id": event_object_id, **owner_query},
         {"$set": update_data},
         return_document=True,
     )
-    return _encode(doc) if doc else None
+    return _encode(doc)
 
 
-async def delete(event_id: str, owner_id: str) -> bool:
+async def delete(event_id: str, owner_id: str) -> None:
     db = await get_db()
-    result = await db[COLLECTION].delete_one({"_id": _object_id(event_id, "event ID"), **_owner_query(owner_id)})
-    return result.deleted_count > 0
+    event_object_id = _object_id(event_id, "event ID")
+    owner_query = _owner_query(owner_id)
+    existing = await db[COLLECTION].find_one({"_id": event_object_id, **owner_query})
+    if not existing:
+        _raise_not_found()
+    await db[COLLECTION].delete_one({"_id": event_object_id, **owner_query})

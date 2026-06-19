@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from ..auth.dependencies import get_current_user_id
 from .schemas import EventCreate, EventResponse, EventUpdate
@@ -19,22 +19,14 @@ async def list_events(user_id: str = Depends(get_current_user_id)):
 
 @router.get("/{event_id}", response_model=EventResponse)
 async def get_event(event_id: str, user_id: str = Depends(get_current_user_id)):
-    event = await service.get(event_id, user_id)
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return event
+    return await service.get(event_id, user_id)
 
 
 @router.put("/{event_id}", response_model=EventResponse)
 async def update_event(event_id: str, data: EventUpdate, user_id: str = Depends(get_current_user_id)):
-    event = await service.update(event_id, user_id, data)
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return event
+    return await service.update(event_id, user_id, data)
 
 
 @router.delete("/{event_id}", status_code=204)
 async def delete_event(event_id: str, user_id: str = Depends(get_current_user_id)):
-    deleted = await service.delete(event_id, user_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Event not found")
+    await service.delete(event_id, user_id)

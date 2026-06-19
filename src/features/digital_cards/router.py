@@ -26,19 +26,14 @@ async def create_digital_card(digital_card: DigitalCardCreate, current_user_id: 
 
 @router.get("/digital-cards/{digital_card_id}", response_model=DigitalCardResponse)
 async def get_digital_card(digital_card_id: str, current_user_id: str = Depends(get_current_user_id)):
-    card = await get_digital_card_service(digital_card_id, current_user_id)
-    if not card:
-        raise HTTPException(status_code=404, detail="Digital card not found")
-    return card
+    return await get_digital_card_service(digital_card_id, current_user_id)
 
 
 @router.put("/digital-cards/{digital_card_id}")
 async def update_digital_card(digital_card_id: str, digital_card: DigitalCardUpdate, is_owner=Depends(validate_owner_digital_card)):
     if not is_owner:
         raise HTTPException(status_code=403, detail="Forbidden")
-    result = await update_digital_card_service(digital_card_id, digital_card)
-    if not result:
-        raise HTTPException(status_code=404, detail="Digital card not found")
+    await update_digital_card_service(digital_card_id, digital_card)
     return {"message": "Digital card updated successfully"}
 
 
@@ -46,16 +41,10 @@ async def update_digital_card(digital_card_id: str, digital_card: DigitalCardUpd
 async def toggle_public_digital_card(digital_card_id: str, is_public: bool, is_owner=Depends(validate_owner_digital_card)):
     if not is_owner:
         raise HTTPException(status_code=403, detail="Forbidden")
-    card = await toggle_public_digital_card_service(digital_card_id, is_public)
-    if not card:
-        raise HTTPException(status_code=404, detail="Digital card not found")
-    return card
+    return await toggle_public_digital_card_service(digital_card_id, is_public)
 
 
 # Step 11: Public digital business card
 @router.get("/public/{username}", response_model=DigitalCardResponse, tags=["public"])
 async def get_public_card(username: str):
-    card = await get_public_card_by_username_service(username)
-    if not card:
-        raise HTTPException(status_code=404, detail="Public card not found")
-    return card
+    return await get_public_card_by_username_service(username)

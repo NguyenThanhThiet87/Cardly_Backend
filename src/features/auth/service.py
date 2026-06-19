@@ -1,14 +1,26 @@
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+import hashlib
+import secrets
 import bcrypt
 import jwt
 from bson import ObjectId
 from fastapi import HTTPException, status
+from starlette.concurrency import run_in_threadpool
 from ...core.database import get_db
 from .models import UserDocument, TokenPayload
 from .schemas import RegisterRequest, UserResponse
-from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE, REFRESH_TOKEN_EXPIRE
+from .config import (
+    SECRET_KEY,
+    ALGORITHM,
+    ACCESS_TOKEN_EXPIRE,
+    REFRESH_TOKEN_EXPIRE,
+    RESET_PASSWORD_TOKEN_EXPIRE,
+    RESET_PASSWORD_TOKEN_EXPIRE_MINUTES,
+    RESET_PASSWORD_URL,
+)
 from .constants import AUTH_COLLECTION, USER_NOT_FOUND, INVALID_CREDENTIALS, USER_ALREADY_EXISTS
+from .email import send_password_reset_email
 
 
 class AuthService:
@@ -24,6 +36,11 @@ class AuthService:
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+    @staticmethod
+    def hash_reset_token(token: str) -> str:
+        """Hash a password reset token before storing it"""
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
     @staticmethod
     def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None) -> tuple[str, int]:
@@ -136,6 +153,68 @@ class AuthService:
             )
 
         return user
+
+    @staticmethod
+    async def forgot_password(email: str) -> None:
+        """Generate a one-time password reset token and email it to the user"""
+        db = await get_db()
+        user = await db[AUTH_COLLECTION].find_one({"email": email})
+
+        if not user:
+            return None
+
+        reset_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + RESET_PASSWORD_TOKEN_EXPIRE
+        reset_link = f"{RESET_PASSWORD_URL}?token={reset_token}"
+
+        await db[AUTH_COLLECTION].update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "reset_password_token_hash": AuthService.hash_reset_token(reset_token),
+                    "reset_password_expires_at": expires_at,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
+        )
+
+        await run_in_threadpool(
+            send_password_reset_email,
+            user["email"],
+            reset_link,
+            RESET_PASSWORD_TOKEN_EXPIRE_MINUTES,
+        )
+        return None
+
+    @staticmethod
+    async def reset_password(token: str, new_password: str) -> None:
+        """Reset a user's password with a valid one-time reset token"""
+        db = await get_db()
+        token_hash = AuthService.hash_reset_token(token)
+        now = datetime.now(timezone.utc)
+
+        result = await db[AUTH_COLLECTION].update_one(
+            {
+                "reset_password_token_hash": token_hash,
+                "reset_password_expires_at": {"$gt": now},
+            },
+            {
+                "$set": {
+                    "hashed_password": AuthService.hash_password(new_password),
+                    "updated_at": now,
+                },
+                "$unset": {
+                    "reset_password_token_hash": "",
+                    "reset_password_expires_at": "",
+                },
+            },
+        )
+
+        if result.modified_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired password reset token",
+            )
 
     @staticmethod
     async def get_user_by_id(user_id: str) -> dict:

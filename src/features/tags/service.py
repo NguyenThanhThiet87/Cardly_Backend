@@ -21,6 +21,10 @@ def _object_id(value: str) -> ObjectId:
         raise HTTPException(status_code=400, detail="Invalid tag ID")
 
 
+def _raise_not_found() -> None:
+    raise HTTPException(status_code=404, detail="Tag not found")
+
+
 async def create(data: TagCreate) -> dict:
     db = await get_db()
     doc = TagDocument(**data.model_dump())
@@ -35,26 +39,36 @@ async def list_tags() -> list:
     return _encode(docs)
 
 
-async def get(tag_id: str) -> dict | None:
+async def get(tag_id: str) -> dict:
     db = await get_db()
     doc = await db[COLLECTION].find_one({"_id": _object_id(tag_id)})
-    return _encode(doc) if doc else None
+    if not doc:
+        _raise_not_found()
+    return _encode(doc)
 
 
-async def update(tag_id: str, data: TagUpdate) -> dict | None:
+async def update(tag_id: str, data: TagUpdate) -> dict:
     db = await get_db()
+    tag_object_id = _object_id(tag_id)
+    existing = await db[COLLECTION].find_one({"_id": tag_object_id})
+    if not existing:
+        _raise_not_found()
+
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update_data:
-        return await get(tag_id)
+        return _encode(existing)
     doc = await db[COLLECTION].find_one_and_update(
-        {"_id": _object_id(tag_id)},
+        {"_id": tag_object_id},
         {"$set": update_data},
         return_document=True,
     )
-    return _encode(doc) if doc else None
+    return _encode(doc)
 
 
-async def delete(tag_id: str) -> bool:
+async def delete(tag_id: str) -> None:
     db = await get_db()
-    result = await db[COLLECTION].delete_one({"_id": _object_id(tag_id)})
-    return result.deleted_count > 0
+    tag_object_id = _object_id(tag_id)
+    existing = await db[COLLECTION].find_one({"_id": tag_object_id})
+    if not existing:
+        _raise_not_found()
+    await db[COLLECTION].delete_one({"_id": tag_object_id})

@@ -18,6 +18,14 @@ def _owner_query(owner_id: str) -> dict:
         raise HTTPException(status_code=400, detail="Invalid user ID")
 
 
+def _digital_card_not_found() -> None:
+    raise HTTPException(status_code=404, detail="Digital card not found")
+
+
+def _public_card_not_found() -> None:
+    raise HTTPException(status_code=404, detail="Public card not found")
+
+
 async def get_digital_cards_service(owner_id: str):
     db = await get_db()
     cards = await db[COLLECTION_NAME].find(_owner_query(owner_id)).to_list(length=100)
@@ -31,7 +39,9 @@ async def get_digital_card_service(digital_card_id: str, owner_id: str | None = 
         if owner_id:
             query.update(_owner_query(owner_id))
         card = await db[COLLECTION_NAME].find_one(query)
-        return jsonable_encoder(card, custom_encoder={ObjectId: str}) if card else None
+        if not card:
+            _digital_card_not_found()
+        return jsonable_encoder(card, custom_encoder={ObjectId: str})
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid digital card ID")
 
@@ -52,14 +62,16 @@ async def create_digital_card_service(card_in: DigitalCardCreate, owner_id: str)
 async def update_digital_card_service(digital_card_id: str, card_in: DigitalCardUpdate):
     try:
         db = await get_db()
+        card_object_id = ObjectId(digital_card_id)
+        existing = await db[COLLECTION_NAME].find_one({"_id": card_object_id})
+        if not existing:
+            _digital_card_not_found()
+
         update_data = card_in.model_dump(mode="json", exclude_unset=True)
         if update_data:
             update_data["updated_at"] = datetime.now(timezone.utc)
-            result = await db[COLLECTION_NAME].update_one(
-                {"_id": ObjectId(digital_card_id)}, {"$set": update_data}
-            )
-            return result.matched_count > 0
-        return False
+            await db[COLLECTION_NAME].update_one({"_id": card_object_id}, {"$set": update_data})
+        return True
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid digital card ID")
 
@@ -67,12 +79,17 @@ async def update_digital_card_service(digital_card_id: str, card_in: DigitalCard
 async def toggle_public_digital_card_service(digital_card_id: str, is_public: bool):
     try:
         db = await get_db()
+        card_object_id = ObjectId(digital_card_id)
+        existing = await db[COLLECTION_NAME].find_one({"_id": card_object_id})
+        if not existing:
+            _digital_card_not_found()
+
         updated_card = await db[COLLECTION_NAME].find_one_and_update(
-            {"_id": ObjectId(digital_card_id)},
+            {"_id": card_object_id},
             {"$set": {"is_public": is_public, "updated_at": datetime.now(timezone.utc)}},
             return_document=ReturnDocument.AFTER,
         )
-        return jsonable_encoder(updated_card, custom_encoder={ObjectId: str}) if updated_card else None
+        return jsonable_encoder(updated_card, custom_encoder={ObjectId: str})
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid digital card ID")
 
@@ -82,9 +99,11 @@ async def get_public_card_by_username_service(username: str):
     # Join với users để tìm theo username, sau đó lấy card public của user đó
     user = await db["users"].find_one({"username": username})
     if not user:
-        return None
+        _public_card_not_found()
     owner_values = [str(user["_id"]), user["_id"]]
     card = await db[COLLECTION_NAME].find_one(
         {"owner_id": {"$in": owner_values}, "is_public": True}
     )
-    return jsonable_encoder(card, custom_encoder={ObjectId: str}) if card else None
+    if not card:
+        _public_card_not_found()
+    return jsonable_encoder(card, custom_encoder={ObjectId: str})

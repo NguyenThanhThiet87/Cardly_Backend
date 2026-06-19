@@ -7,40 +7,55 @@ from .utils import build_user_response
 COLLECTION = "users"
 
 
-async def get_me(user_id: str) -> dict | None:
+def _raise_not_found() -> None:
+    from fastapi import HTTPException
+    raise HTTPException(status_code=404, detail="User not found")
+
+
+async def get_me(user_id: str) -> dict:
     from bson.errors import InvalidId
     from fastapi import HTTPException
     try:
         db = await get_db()
         user = await db[COLLECTION].find_one({"_id": ObjectId(user_id)})
-        return build_user_response(user) if user else None
+        if not user:
+            _raise_not_found()
+        return build_user_response(user)
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid user ID")
 
 
-async def update_profile(user_id: str, data: UserUpdate) -> dict | None:
+async def update_profile(user_id: str, data: UserUpdate) -> dict:
     from bson.errors import InvalidId
     from fastapi import HTTPException
     try:
         db = await get_db()
+        user_object_id = ObjectId(user_id)
+        existing = await db[COLLECTION].find_one({"_id": user_object_id})
+        if not existing:
+            _raise_not_found()
+
         update = {k: v for k, v in data.model_dump().items() if v is not None}
         update["updated_at"] = datetime.now(timezone.utc)
         user = await db[COLLECTION].find_one_and_update(
-            {"_id": ObjectId(user_id)},
+            {"_id": user_object_id},
             {"$set": update},
             return_document=True,
         )
-        return build_user_response(user) if user else None
+        return build_user_response(user)
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid user ID")
 
 
-async def delete_account(user_id: str) -> bool:
+async def delete_account(user_id: str) -> None:
     from bson.errors import InvalidId
     from fastapi import HTTPException
     try:
         db = await get_db()
-        result = await db[COLLECTION].delete_one({"_id": ObjectId(user_id)})
-        return result.deleted_count > 0
+        user_object_id = ObjectId(user_id)
+        existing = await db[COLLECTION].find_one({"_id": user_object_id})
+        if not existing:
+            _raise_not_found()
+        await db[COLLECTION].delete_one({"_id": user_object_id})
     except InvalidId:
         raise HTTPException(status_code=400, detail="Invalid user ID")

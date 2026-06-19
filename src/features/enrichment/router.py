@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from ..auth.dependencies import get_current_user_id
 from .schemas import EnrichmentResultCreate, EnrichmentResultResponse, EnrichmentResultUpdate
@@ -14,10 +14,7 @@ async def create_enrichment_result(data: EnrichmentResultCreate, user_id: str = 
 
 @router.get("/contacts/{contact_id}", response_model=EnrichmentResultResponse)
 async def get_enrichment_result(contact_id: str, user_id: str = Depends(get_current_user_id)):
-    result = await service.get_by_contact(contact_id, user_id)
-    if not result:
-        raise HTTPException(status_code=404, detail="Enrichment result not found")
-    return result
+    return await service.get_by_contact(contact_id, user_id)
 
 
 @router.put("/contacts/{contact_id}", response_model=EnrichmentResultResponse)
@@ -26,14 +23,9 @@ async def update_enrichment_result(
     data: EnrichmentResultUpdate,
     user_id: str = Depends(get_current_user_id),
 ):
-    result = await service.update_by_contact(contact_id, user_id, data)
-    if not result:
-        raise HTTPException(status_code=404, detail="Enrichment result not found")
-    return result
+    return await service.update_by_contact(contact_id, user_id, data)
 
 
 @router.delete("/contacts/{contact_id}", status_code=204)
 async def delete_enrichment_result(contact_id: str, user_id: str = Depends(get_current_user_id)):
-    deleted = await service.delete_by_contact(contact_id, user_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Enrichment result not found")
+    await service.delete_by_contact(contact_id, user_id)
