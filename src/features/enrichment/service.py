@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -10,8 +11,20 @@ from ...features.contacts.service import get as get_contact
 from .models import EnrichmentResultDocument
 from .schemas import EnrichmentResultCreate, EnrichmentResultUpdate
 
-COLLECTION = "enrichment_results"
+import os
+from google import genai
+from google.genai.types import Tool, GenerateContentConfig
 
+from dotenv import load_dotenv
+load_dotenv()
+
+# crawl
+import requests
+from bs4 import BeautifulSoup
+
+from .schemas import EnrichmentResultBase
+
+COLLECTION = "enrichment_results"
 
 def _encode(doc):
     return jsonable_encoder(doc, custom_encoder={ObjectId: str})
