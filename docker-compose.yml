@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # Cấu hình cho FastAPI backend
+  api:
+    build: .
+    image: nguyenthanhthiet/cardly_backend:v1.0.0
+    container_name: cardly_api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env  # Tự động đọc biến môi trường từ file .env của bạn
+    depends_on:
+      - mongodb
+    # Nếu muốn code thay đổi trên máy tính tự cập nhật vào container, hãy mở comment dòng volumes bên dưới:
+    # volumes:
+    #   - .:/app
+    #   - /app/.venv
+
+  # Cấu hình cho database MongoDB
+  mongodb:
+    image: mongo:latest
+    container_name: cardly_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db # Lưu trữ data để không bị mất khi tắt container
+
+volumes:
+  mongodb_data:

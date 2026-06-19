@@ -8,14 +8,11 @@ load_dotenv(override=True)
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("DB_NAME")
 
-
 class MongoDB:
     client: AsyncIOMotorClient = None
     db = None
 
-
 db_connection = MongoDB()
-
 
 async def connect_to_mongo():
     db_name = os.getenv("DB_NAME")
@@ -24,11 +21,9 @@ async def connect_to_mongo():
     db_connection.db = db_connection.client[db_name]
     print("--- Connected to MongoDB ---")
 
-
 async def close_mongo_connection():
     db_connection.client.close()
     print("--- Disconnected from MongoDB ---")
-
 
 async def get_db():
     if db_connection.db is None:
