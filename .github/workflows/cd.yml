@@ -5,10 +5,11 @@ on:
     branches:
       - main
 
+      
 env:
   PROJECT_ID: cardly-learn
   REGION: asia-southeast1         # Đã sửa thành Singapore cho mạng nhanh
-  REPO_NAME: backendcardlyservice         # Tên kho Artifact Registry của bạn
+  REPO_NAME: cardly-learn         # Tên kho Artifact Registry của bạn
   IMAGE_NAME: cardly-backend
   SERVICE_NAME: cardly-backend-api
 
