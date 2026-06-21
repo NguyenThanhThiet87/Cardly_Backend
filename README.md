@@ -196,7 +196,7 @@ Xem chi tiết request/response trong Swagger:
 http://localhost:8000/docs
 ```
 
-## Lỗi Thường Gặp
+## Lỗi Thường Gặp.
 
 Nếu forgot password báo thiếu SMTP config, kiểm tra các biến:
 
