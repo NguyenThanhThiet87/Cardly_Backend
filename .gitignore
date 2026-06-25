@@ -7,3 +7,8 @@ __pycache__/
 tests/
 TIC_-_Big_Project_Internship_Summer26 (1).pdf
 TIC_-_BE_Internship_Summer26.pdf
+
+# sst
+.sst
+
+node_modules

@@ -4,7 +4,10 @@ on:
   push:
     branches:
       - main
-
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.gitignore'
       
 env:
   PROJECT_ID: cardly-learn
